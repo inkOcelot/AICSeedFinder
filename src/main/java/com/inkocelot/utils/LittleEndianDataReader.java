@@ -85,12 +85,4 @@ public class LittleEndianDataReader implements DataInput {
     public String readUTF() throws IOException {
         return input.readUTF();
     }
-
-    // 辅助方法：读取可变长度字符串
-    public String readString() throws IOException {
-        int len = readUnsignedByte();
-        byte[] bytes = new byte[len];
-        readFully(bytes);
-        return new String(bytes, StandardCharsets.UTF_8);
-    }
 }
