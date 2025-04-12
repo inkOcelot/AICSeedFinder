@@ -1,0 +1,17 @@
+package com.inkocelot.model;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class Respond {
+    private boolean success;
+    private String msg;
+    private Long duration;
+    private List<Seed> topSeeds;
+}

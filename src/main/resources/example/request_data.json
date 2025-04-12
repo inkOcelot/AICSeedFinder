@@ -1,0 +1,71 @@
+{
+  "type": "local",
+  "path": "src/main/resources/forest_darkpot.aicseed",
+  "buffer": 64,
+  "size": 20,
+  "cond": {
+    "seed": [
+      {
+        "enemyId": "SNAKE",
+        "operator": "gt",
+        "value": 1,
+        "score": -60
+      }
+    ],
+    "enemy": [
+      {
+        "attrs": [2],
+        "score": -20
+      },
+      {
+        "isOverride": false,
+        "attrs": [1],
+        "score": -20
+      },
+      {
+        "isOverride": false,
+        "attrs": [2],
+        "score": -20
+      },
+      {
+        "attrs": [65536],
+        "score": 5
+      },
+      {
+        "enemyId": "MUSH",
+        "isOverride": true,
+        "score": -20
+      },
+      {
+        "enemyId": "MUSH",
+        "isOverride": true,
+        "attrs": [2,4],
+        "score": -50
+      },
+      {
+        "enemyId": "SLIME",
+        "isOverride": true,
+        "attrs": [4096],
+        "score": -50
+      },
+      {
+        "enemyId": "SLIME",
+        "isOverride": true,
+        "attrs": [2048],
+        "score": -50
+      },
+      {
+        "enemyId": "SLIME",
+        "isOverride": true,
+        "attrs": [256],
+        "score": -50
+      },
+      {
+        "enemyId": "SLIME",
+        "isOverride": true,
+        "attrs": [1024],
+        "score": -15
+      }
+    ]
+  }
+}
