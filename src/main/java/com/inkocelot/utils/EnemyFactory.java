@@ -4,7 +4,6 @@ import com.inkocelot.model.Enemy;
 import com.inkocelot.model.cond.EnemyCondition;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 

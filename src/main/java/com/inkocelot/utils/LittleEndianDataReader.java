@@ -1,8 +1,6 @@
 package com.inkocelot.utils;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
 public class LittleEndianDataReader implements DataInput {
@@ -79,7 +77,7 @@ public class LittleEndianDataReader implements DataInput {
     }
 
     @Override
-    public String readLine() throws IOException {
+    public String readLine(){
         throw new UnsupportedOperationException("readLine not supported");
     }
 
