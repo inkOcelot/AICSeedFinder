@@ -12,9 +12,9 @@ import java.util.List;
 @AllArgsConstructor
 public class Seed {
     private int attempt;
-    private int[] seed1 = new int[4];
-    private int[] seed2 = new int[4];
-    private int[] seed3 = new int[4];
-    private List<Enemy> enemies = new ArrayList<>();
+    private long[] seed1;
+    private long[] seed2;
+    private long[] seed3;
+    private List<Enemy> enemies;
     private int score;
 }

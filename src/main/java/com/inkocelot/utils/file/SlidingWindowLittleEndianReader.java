@@ -182,7 +182,7 @@ public class SlidingWindowLittleEndianReader implements LittleEndianReader, Auto
      */
     private void ensureAvailable(int bytes) throws IOException {
         var endPos = currentPosition + bytes;
-        if (endPos > fileSize) throw new IOException("尝试读取文件末尾之外");
+        if (endPos > fileSize) throw new IOException("尝试读取文件末尾之外, 请检查数据文件");
 
         if (currentWindow == null || endPos > windowStart + currentWindow.limit()) {
             seek(currentPosition);

@@ -13,5 +13,5 @@ public class Respond {
     private boolean success;
     private String msg;
     private Long duration;
-    private List<Seed> topSeeds;
+    private Object data;
 }

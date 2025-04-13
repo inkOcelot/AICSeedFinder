@@ -37,14 +37,14 @@ public class SeedFactory {
         if (reader.readInt() != 0x12345678) log.error("错误的文件格式 - 起始头丢失");
 
         var attempt = reader.readInt();
-        var seed1 = new int[4];
-        var seed2 = new int[4];
-        var seed3 = new int[4];
+        var seed1 = new long[4];
+        var seed2 = new long[4];
+        var seed3 = new long[4];
         var enemies = new ArrayList<Enemy>();
 
-        for (int i = 0; i < 4; i++) seed1[i] = reader.readInt();
-        for (int i = 0; i < 4; i++) seed2[i] = reader.readInt();
-        for (int i = 0; i < 4; i++) seed3[i] = reader.readInt();
+        for (int i = 0; i < 4; i++) seed1[i] = reader.readInt() & 0xFFFFFFFFL;
+        for (int i = 0; i < 4; i++) seed2[i] = reader.readInt() & 0xFFFFFFFFL;
+        for (int i = 0; i < 4; i++) seed3[i] = reader.readInt() & 0xFFFFFFFFL;
 
         var count = reader.readInt();
         var score = 0;

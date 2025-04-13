@@ -7,6 +7,7 @@ import com.inkocelot.utils.factory.SeedFactory;
 import com.inkocelot.utils.file.SlidingWindowLittleEndianReader;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -19,7 +20,6 @@ import java.util.concurrent.Future;
 
 @Slf4j
 public class ParallelSeedAnalyzer {
-    private static final int DEFAULT_THREAD_POOL_SIZE = Runtime.getRuntime().availableProcessors();
 
     private static List<Seed> processChunk(int order, Request req, Chunk chunk) {
         try (var reader = new SlidingWindowLittleEndianReader(
@@ -29,7 +29,7 @@ public class ParallelSeedAnalyzer {
             reader.seek(chunk.getStart()); // 定位到区块起始位置
 
             var topSeeds = new PriorityQueue<>(req.getSize(), Comparator.comparingInt(Seed::getScore));
-            var remainSeedNumber = req.getSize() - (req.getParallelNumber() - 1);
+            var remainSeedNumber = Math.max(req.getSize() - (req.getParallelNumber() - 1), 1);
 
             while (reader.getPosition() < chunk.getEnd()) {
                 try {
@@ -40,7 +40,7 @@ public class ParallelSeedAnalyzer {
                     }
                 } catch (IOException e) {
                     var errorPosition = reader.getPosition();
-                    log.error("种子在 [0x{}] (区块偏移量: 0x{}) 处处理失败, 原因 - {}",
+                    log.error("种子在 [0x{}] (区块偏移量: 0x{}) 处发生错误, 原因 - {}",
                             Long.toHexString(errorPosition),
                             Long.toHexString(errorPosition - chunk.getStart()),
                             e.getMessage(),
@@ -48,7 +48,7 @@ public class ParallelSeedAnalyzer {
                     break;
                 }
             }
-            log.info("区块{} - {}处理完毕", order, chunk);
+            log.info("\t区块#{}\t- {}处理完毕", order, chunk);
             return topSeeds.stream().toList();
         } catch (IOException e) {
             log.error("处理单个区块时出现错误 - 区块{}", chunk, e);
@@ -59,9 +59,7 @@ public class ParallelSeedAnalyzer {
     public static List<Seed> analyzer(Request req) throws IOException, ExecutionException, InterruptedException {
         // 准备线程池
         var executor = Executors.newFixedThreadPool(
-                req.getParallelNumber() > 0 ?
-                        Math.min(req.getParallelNumber(), DEFAULT_THREAD_POOL_SIZE) :
-                        DEFAULT_THREAD_POOL_SIZE
+                req.getParallelNumber()
         );
 
         // 文件分块
