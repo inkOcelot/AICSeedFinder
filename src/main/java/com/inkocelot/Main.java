@@ -8,17 +8,49 @@ import com.inkocelot.utils.analyzer.ParallelSeedAnalyzer;
 import com.inkocelot.utils.analyzer.SeedAnalyzer;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.*;
 import java.util.List;
+import java.util.Properties;
 
 import static spark.Spark.port;
 import static spark.Spark.post;
 
 @Slf4j
 public class Main {
+    private static final String CONFIG_FILE = "config.properties";
     private static final ObjectMapper mapper = new ObjectMapper();
 
+    private static Properties loadOrCreateConfig() {
+        var props = new Properties();
+
+        try {
+            try (InputStream input = new FileInputStream(CONFIG_FILE)) {
+                props.load(input);
+                log.info("配置已加载");
+                return props;
+            }
+        } catch (IOException e) {
+            log.warn("未找到配置文件, 将创建默认配置");
+        }
+
+        // 配置默认值
+        props.setProperty("server.port", "2471");
+
+        // 保存默认值
+        try (OutputStream output = new FileOutputStream(CONFIG_FILE)) {
+            props.store(output, "自动生成的默认配置");
+        } catch (IOException ex) {
+            log.error("无法保存配置文件", ex);
+        }
+
+        return props;
+    }
+
     public static void main(String[] args) {
-        port(2641);
+        // 查找配置文件
+        var props = loadOrCreateConfig();
+
+        port(Integer.parseInt(props.getProperty("server.port")));
         post("/seedfinder", (req, res) -> {
             try {
                 var request = mapper.readValue(req.body(), Request.class);
