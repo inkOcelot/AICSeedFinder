@@ -1,7 +1,8 @@
-package com.inkocelot.utils;
+package com.inkocelot.utils.factory;
 
 import com.inkocelot.model.Enemy;
 import com.inkocelot.model.cond.EnemyCondition;
+import com.inkocelot.utils.file.LittleEndianReader;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -14,7 +15,7 @@ public class EnemyFactory {
     }
 
     public static Enemy createFromFile(
-            LittleEndianDataReader reader,
+            LittleEndianReader reader,
             List<EnemyCondition> conditions,
             int order
     ) throws IOException {

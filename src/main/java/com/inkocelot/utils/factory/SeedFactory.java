@@ -1,9 +1,12 @@
-package com.inkocelot.utils;
+package com.inkocelot.utils.factory;
 
 import com.inkocelot.model.Enemy;
 import com.inkocelot.model.Seed;
 import com.inkocelot.model.cond.Conditions;
 import com.inkocelot.model.cond.SeedCondition;
+import com.inkocelot.utils.file.LittleEndianDataReader;
+import com.inkocelot.utils.file.LittleEndianReader;
+import com.inkocelot.utils.file.SlidingWindowLittleEndianReader;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -13,7 +16,24 @@ import java.util.HashMap;
 @Slf4j
 public class SeedFactory {
 
-    public static Seed createFromFile(LittleEndianDataReader reader, Conditions conditions) throws IOException {
+    public static Seed createFromFile(
+            LittleEndianDataReader reader,
+            Conditions conditions
+    ) throws IOException {
+        return createSeed(reader, conditions);
+    }
+
+    public static Seed createFromFile(
+            SlidingWindowLittleEndianReader reader,
+            Conditions conditions
+    ) throws IOException {
+        return createSeed(reader, conditions);
+    }
+
+    private static Seed createSeed(
+            LittleEndianReader reader,
+            Conditions conditions
+    ) throws IOException {
         if (reader.readInt() != 0x12345678) log.error("错误的文件格式 - 起始头丢失");
 
         var attempt = reader.readInt();
@@ -32,12 +52,10 @@ public class SeedFactory {
 
         // Enemy计分 从1开始数
         for (int i = 0; i < count; i++) {
-            var enemy = EnemyFactory.createFromFile(reader, conditions.getEnemy(), count - i);
-            if (enemyCount.containsKey(enemy.getEnemyId())) {
-                enemyCount.put(enemy.getEnemyId(), enemyCount.get(enemy.getEnemyId()) + 1);
-            } else {
-                enemyCount.put(enemy.getEnemyId(), 1);
-            }
+            var enemy = EnemyFactory.createFromFile(
+                    reader, conditions.getEnemy(), count - i
+            );
+            enemyCount.merge(enemy.getEnemyId(), 1, Integer::sum);
             score += enemy.getScore();
             enemies.add(enemy);
         }
@@ -59,7 +77,6 @@ public class SeedFactory {
             };
             if (result) score += sc.getScore();
         }
-
 
         if (reader.readInt() != 0x87654321) log.error("错误的文件格式 - 结束头丢失");
 

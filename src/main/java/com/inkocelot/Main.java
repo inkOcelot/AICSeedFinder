@@ -1,11 +1,17 @@
 package com.inkocelot;
 
-import static spark.Spark.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inkocelot.model.Request;
 import com.inkocelot.model.Respond;
-import com.inkocelot.utils.SeedAnalyzer;
+import com.inkocelot.model.Seed;
+import com.inkocelot.utils.analyzer.ParallelSeedAnalyzer;
+import com.inkocelot.utils.analyzer.SeedAnalyzer;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.List;
+
+import static spark.Spark.port;
+import static spark.Spark.post;
 
 @Slf4j
 public class Main {
@@ -26,12 +32,24 @@ public class Main {
                 }
 
                 log.info(
-                        "接收到请求, 解析模式: {}, 解析文件路径: {}, 缓冲区大小: {}MB, 堆大小: {}",
-                        request.getType(), request.getPath(), request.getBuffer(), request.getSize()
+                        "接收到请求 => 解析模式: {}, 解析文件路径: {}, 是否启用多线程: {}, 线程数: {}, 滑动窗口大小: {}MB, 缓冲区大小: {}MB, 堆大小: {}",
+                        request.getType(),
+                        request.getPath(),
+                        request.getIsParallel(),
+                        Math.min(request.getParallelNumber(),
+                                Runtime.getRuntime().availableProcessors()),
+                        request.getSlidingWindowSize(),
+                        request.getBuffer(),
+                        request.getSize()
                 );
 
                 var start = System.currentTimeMillis();
-                var result = SeedAnalyzer.analyzer(request);
+                List<Seed> result;
+                if (request.getIsParallel()) {
+                    result = ParallelSeedAnalyzer.analyzer(request);
+                } else {
+                    result = SeedAnalyzer.analyzer(request);
+                }
                 var duration = System.currentTimeMillis() - start;
 
                 log.info("本次解析耗时{}ms", duration);

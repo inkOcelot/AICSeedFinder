@@ -1,7 +1,9 @@
-package com.inkocelot.utils;
+package com.inkocelot.utils.analyzer;
 
 import com.inkocelot.model.Request;
 import com.inkocelot.model.Seed;
+import com.inkocelot.utils.factory.SeedFactory;
+import com.inkocelot.utils.file.LittleEndianDataReader;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.FileInputStream;
@@ -33,10 +35,27 @@ public class SeedAnalyzer {
                 }
             }
 
-            return topSeeds.stream().toList();
+            return topSeeds.stream().sorted(Comparator.comparingInt(Seed::getScore).reversed()).toList();
         } catch (IOException e) {
             log.error("处理文件时出错 - {}", e.getMessage());
         }
         return null;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

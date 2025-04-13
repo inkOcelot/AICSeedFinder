@@ -1,7 +1,12 @@
 {
   "type": "local",
   "path": "src/main/resources/forest_darkpot.aicseed",
+
+  "isParallel": true,
+  "parallelNumber": 12,
+  "slidingWindowSize": 4,
   "buffer": 64,
+
   "size": 20,
   "cond": {
     "seed": [
