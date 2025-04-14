@@ -3,6 +3,7 @@
 
 // 定义颜色变量
 $charcoal-black: #121212; // 炭黑
+$charcoal-black-lighter: #242424;
 $ivory-white: #fffff0; // 象牙白
 $border-gray: rgba(125, 125, 125, 0.3); // 边框灰色
 
@@ -32,20 +33,16 @@ $border-gray: rgba(125, 125, 125, 0.3); // 边框灰色
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(
-      to bottom,
-      rgba(44, 44, 44, 0.2),
-      rgba(18, 18, 18, 0.5)
-    );
+    background: linear-gradient(to bottom,
+        rgba(44, 44, 44, 0.2),
+        rgba(18, 18, 18, 0.5));
     z-index: -1;
     border-radius: inherit;
   }
 }
 
-// 高亮效果混合 - 反转颜色效果
 @mixin hover-reverse() {
-  color: $charcoal-black !important;
-  background-color: $ivory-white !important;
+  background-color: $charcoal-black-lighter !important;
   border-color: $charcoal-black !important;
 }
 
@@ -93,13 +90,6 @@ $border-gray: rgba(125, 125, 125, 0.3); // 边框灰色
       margin: 0;
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
       transition: all 0.3s;
-
-      &:hover {
-        color: $charcoal-black;
-        background-color: $ivory-white;
-        padding: 2px 8px;
-        border-radius: 4px;
-      }
     }
 
     .el-tag {
@@ -123,8 +113,6 @@ $border-gray: rgba(125, 125, 125, 0.3); // 边框灰色
 
   &:hover {
     @include hover-reverse();
-    transform: translateY(-1px);
-    box-shadow: 4px 12px rgba(0, 0, 0, 0.15);
   }
 
   &:active {
@@ -153,10 +141,6 @@ $border-gray: rgba(125, 125, 125, 0.3); // 边框灰色
   .el-sub-menu__title {
     color: $ivory-white !important;
     transition: all 0.3s;
-
-    &:hover {
-      @include hover-reverse();
-    }
   }
 
   .el-menu-item {
@@ -191,7 +175,7 @@ $border-gray: rgba(125, 125, 125, 0.3); // 边框灰色
   tr {
     color: $ivory-white !important;
 
-    &:hover > td {
+    &:hover>td {
       @include hover-reverse();
     }
   }

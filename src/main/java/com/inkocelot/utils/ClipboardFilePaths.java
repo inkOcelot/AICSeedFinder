@@ -25,6 +25,7 @@ public class ClipboardFilePaths {
                 return path;
             } else {
                 log.warn("警告, 剪贴板中不存在文件");
+                return null;
             }
         } catch (Exception e) {
             if (!e.getMessage().contains("java.lang.ClassNotFoundException: com/intellij/")) {

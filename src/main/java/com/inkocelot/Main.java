@@ -17,9 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static spark.Spark.get;
-import static spark.Spark.port;
-import static spark.Spark.post;
+import static spark.Spark.*;
 
 @Slf4j
 public class Main {
@@ -60,13 +58,11 @@ public class Main {
 
         port(serverPort);
 
-        // 获取核心数
-        get("/cores", (req, res) -> {
-            res.type("application/json");
-            return mapper.writeValueAsString(new Respond(
-                    true, "请求成功", null,
-                    Map.of("cores", Runtime.getRuntime().availableProcessors())
-            ));
+        // 全局 CORS 设置
+        before((request, response) -> {
+            response.header("Access-Control-Allow-Origin", "*"); // 允许所有来源
+            response.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+            response.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
         });
 
         // 获取剪贴板中文件路径
@@ -78,15 +74,13 @@ public class Main {
 
                 // 检查路径是否为空
                 if (path == null) {
-                    res.status(500);
                     return mapper.writeValueAsString(new Respond(
-                            false, "请求失败, path可能为空", null, null
+                            false, "请求失败, 剪切板中文件路径可能为空", null, null
                     ));
                 }
 
                 // 检查文件后缀
                 if (!path.endsWith(".aicseed")) {
-                    res.status(500);
                     return mapper.writeValueAsString(new Respond(
                             false, "文件的后缀错误", null, null
                     ));
@@ -98,7 +92,6 @@ public class Main {
                 ));
 
             } catch (Exception e) {
-                res.status(500);
                 log.warn("读取文件路径时出现错误", e);
                 return mapper.writeValueAsString(new Respond(
                         false, "请求失败, 错误: " + e.getMessage(), null, null
@@ -114,7 +107,6 @@ public class Main {
 
                 // 判断路径是否为空
                 if (request.getPath() == null || request.getPath().isEmpty()) {
-                    res.status(400);
                     log.warn("接收到的路径为空");
                     return mapper.writeValueAsString(
                             new Respond(false, "路径不可为空!", null, null)
@@ -129,19 +121,18 @@ public class Main {
                 // 主要业务逻辑
                 var start = System.currentTimeMillis();
                 List<Seed> result;
-                if (request.getConf() instanceof SingleThreadConf stc) {
+                if (request.getConf() instanceof SingleThreadConf conf) {
                     // 01 单线程
-                    log.info("解析模式: (1)单线程, 缓冲大小: {}MB", stc.getBuffer());
+                    log.info("解析模式: (1)单线程, 缓冲大小: {}MB", conf.getBuffer());
                     result = SeedAnalyzer.analyzer(request);
-                } else if (request.getConf() instanceof SlidingWindowMappedConf swmc) {
+                } else if (request.getConf() instanceof SlidingWindowMappedConf conf) {
                     // 02 多线程分块滑动窗口内存映射
                     log.info(
                             "解析模式: (2)多线程分块内存映射, 线程数: {}, 窗口大小: {}MB, 分区缓冲大小: {}MB, 缓冲大小: {}MB",
-                            swmc.getThreads(), swmc.getWindowSize(), swmc.getChunkBuffer(), swmc.getBuffer()
+                            conf.getThreads(), conf.getWindowSize(), conf.getChunkBuffer(), conf.getBuffer()
                     );
                     result = ParallelSeedAnalyzer.analyzer(request);
                 } else {
-                    res.status(500);
                     log.warn("未知的配置文件 - {}", request.getConf());
                     return mapper.writeValueAsString(
                             new Respond(false, "未知的配置文件", null, null)
@@ -157,7 +148,6 @@ public class Main {
                 );
             } catch (Exception e) {
                 // 解析时发生错误
-                res.status(500);
                 log.warn("解析时发生错误 - {}", e.getMessage(), e);
                 return mapper.writeValueAsString(
                         new Respond(false, "错误: " + e.getMessage(), null, null)
