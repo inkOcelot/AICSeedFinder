@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inkocelot.model.Request;
 import com.inkocelot.model.Respond;
 import com.inkocelot.model.Seed;
+import com.inkocelot.model.mode.SingleThreadConf;
+import com.inkocelot.model.mode.SlidingWindowMappedConf;
 import com.inkocelot.utils.analyzer.ParallelSeedAnalyzer;
 import com.inkocelot.utils.analyzer.SeedAnalyzer;
 import lombok.extern.slf4j.Slf4j;
@@ -82,23 +84,30 @@ public class Main {
                 }
 
                 log.info(
-                        "接收到请求 => 解析模式: {}, 解析文件路径: {}, 多线程: {}, 线程数: {}, 滑动窗口大小: {}MB, 缓冲区大小: {}MB, 堆大小: {}",
-                        request.getType(),
-                        request.getPath(),
-                        request.getIsParallel() ? "是" : "否",
-                        request.getParallelNumber(),
-                        request.getSlidingWindowSize(),
-                        request.getBuffer(),
-                        request.getSize()
+                        "接收到请求 - 服务器模式: {}, 解析文件路径: {}, 堆大小: {}",
+                        request.getType(), request.getPath(), request.getSize()
                 );
 
                 // 主要业务逻辑
                 var start = System.currentTimeMillis();
                 List<Seed> result;
-                if (request.getIsParallel()) {
+                if (request.getConf() instanceof SingleThreadConf stc) {
+                    // 01 单线程
+                    log.info("解析模式: (1)单线程, 缓冲大小: {}MB", stc.getBuffer());
+                    result = SeedAnalyzer.analyzer(request);
+                } else if (request.getConf() instanceof SlidingWindowMappedConf swmc) {
+                    // 02 多线程分块滑动窗口内存映射
+                    log.info(
+                            "解析模式: (2)多线程分块内存映射, 线程数: {}, 窗口大小: {}MB, 分区缓冲大小: {}MB, 缓冲大小: {}MB",
+                            swmc.getThreads(), swmc.getWindowSize(), swmc.getChunkBuffer(), swmc.getBuffer()
+                    );
                     result = ParallelSeedAnalyzer.analyzer(request);
                 } else {
-                    result = SeedAnalyzer.analyzer(request);
+                    res.status(500);
+                    log.warn("未知的配置文件 - {}", request.getConf());
+                    return mapper.writeValueAsString(
+                            new Respond(false, "未知的配置文件", null, null)
+                    );
                 }
                 var duration = System.currentTimeMillis() - start;
                 log.info("解析完成, 本次解析耗时{}ms", duration);

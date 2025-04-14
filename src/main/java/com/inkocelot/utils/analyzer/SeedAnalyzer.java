@@ -2,6 +2,7 @@ package com.inkocelot.utils.analyzer;
 
 import com.inkocelot.model.Request;
 import com.inkocelot.model.Seed;
+import com.inkocelot.model.mode.SingleThreadConf;
 import com.inkocelot.utils.factory.SeedFactory;
 import com.inkocelot.utils.file.LittleEndianDataReader;
 import lombok.extern.slf4j.Slf4j;
@@ -18,9 +19,11 @@ public class SeedAnalyzer {
     private SeedAnalyzer() {}
 
     public static List<Seed> analyzer(Request req) {
+        var conf = (SingleThreadConf) req.getConf();
+
         try (var file = new FileInputStream(req.getPath())) {
 
-            var reader = new LittleEndianDataReader(file, req.getBuffer());
+            var reader = new LittleEndianDataReader(file, conf.getBuffer());
             var topSeeds = new PriorityQueue<>(req.getSize(), Comparator.comparingInt(Seed::getScore));
 
             while (true) {

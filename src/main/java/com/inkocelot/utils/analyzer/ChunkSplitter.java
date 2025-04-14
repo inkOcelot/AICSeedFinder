@@ -15,9 +15,14 @@ public final class ChunkSplitter {
     private static final byte[] START_MAGIC_LE = {0x78, 0x56, 0x34, 0x12};
     private static final byte[] END_MAGIC_LE = {0x21, 0x43, 0x65, (byte) 0x87};
     private static final int MAGIC_LENGTH = 4;
-    private static final int BUFFER_SIZE = 8 * 1024 * 1024; // 8MB 缓冲区
+    private static int BUFFER_SIZE = 8 * 1024 * 1024;
+
+    public static void setBufferSize(int size) {
+        BUFFER_SIZE = size * 1024 * 1024;
+    }
 
     public static List<Chunk> split(Path filePath, int numChunks) throws IOException {
+
         List<Chunk> chunks = new ArrayList<>();
         try (FileChannel channel = FileChannel.open(filePath, StandardOpenOption.READ)) {
             long fileSize = channel.size();
