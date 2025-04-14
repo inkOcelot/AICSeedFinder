@@ -1,28 +1,8 @@
 <script setup>
 import { ref } from 'vue'
-import { genFileId } from 'element-plus'
-
-// 组件
-const upload = ref()
 
 // 值
 const filePath = ref()
-
-const handleChange = (uploadFile) => {
-  filePath.value = uploadFile.raw
-  console.log(filePath.value);
-}
-
-const handleExceed = (files) => {
-  upload.value.clearFiles()
-  const file = files[0]
-  file.uid = genFileId()
-  upload.value.handleStart(file)
-}
-
-const submitUpload = () => {
-  upload.value.submit()
-}
 
 </script>
 
@@ -48,25 +28,7 @@ const submitUpload = () => {
 
           <el-form :model="searchForm" label-width="120px">
             <el-row :gutter="20">
-              <el-upload
-                ref="upload"
-                class="file-selector"
-                drag action="#"
-                :auto-upload="false"
-                :on-change="handleChange"
-                :on-exceed="handleExceed"
-                :limit="1"
-                >
-                <el-icon><Download /></el-icon>
-                <div class="el-upload__text">
-                  将文件拖入此处或 <em>点击上传文件</em>
-                </div>
-                <template #tip>
-                  <div class="el-upload__tip text-red">
-                    只能选择一个文件, 新文件将覆盖旧文件
-                  </div>
-                </template>
-              </el-upload>
+              <el-button>获取剪贴板中文件路径</el-button>
             </el-row>
             <el-row :gutter="20">
               

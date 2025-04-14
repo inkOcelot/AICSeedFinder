@@ -1,53 +1,45 @@
 // 黑灰主题变量覆盖
-@forward 'element-plus/theme-chalk/src/common/var.scss' with (
+@forward "element-plus/theme-chalk/src/common/var.scss" with (
   $colors: (
-    'primary': (
-      'base': #4A4A4A, // 水泥灰作为主色
+    "primary": (
+      "base": #4a4a4a,
+      // 水泥灰作为主色
     ),
-    'success': (
-      'base': #67C23A,
+    "success": (
+      "base": #67c23a,
     ),
-    'warning': (
-      'base': #E6A23C,
+    "warning": (
+      "base": #e6a23c,
     ),
-    'danger': (
-      'base': #F56C6C,
+    "danger": (
+      "base": #f56c6c,
     ),
-    'info': (
-      'base': #7D7D7D, // 银箔灰
-    )
+    "info": (
+      "base": #7d7d7d,
+      // 银箔灰
+    ),
   ),
-  
-//   $bg-color: (
-//     '': #121212,     // 炭黑背景
-//     'page': #121212,
-//     'overlay': #2C2C2C // 暗钢灰
-//   ),
-  
-//   $text-color: (
-//     'primary': #E0E0E0, // 珍珠白文字
-//     'regular': #7D7D7D
-//   ),
-  
+
   $border-color: (
-    '': rgba(125, 125, 125, 0.3) // 半透明银箔灰边框
+    "": rgba(125, 125, 125, 0.3) // 半透明银箔灰边框,
   ),
 
   // 新增透明度控制
-  $bg-color: (
-    '': rgba(18, 18, 18, 0.85),  // 炭黑带透明度
-    'page': rgba(18, 18, 18, 0.8),
-    'overlay': rgba(44, 44, 44, 0.9)
-  ),
-  
+  $bg-color:
+    (
+      "": rgba(18, 18, 18, 0.85),
+      // 炭黑带透明度
+      "page": rgba(18, 18, 18, 0.8),
+      "overlay": rgba(44, 44, 44, 0.9),
+    ),
+
   // 调整文字透明度
-  $text-color: (
-    'primary': rgba(224, 224, 224, 0.95),
-    'regular': rgba(125, 125, 125, 0.9)
-  )
+  $text-color:
+    (
+      "primary": rgba(224, 224, 224, 0.95),
+      "regular": rgba(125, 125, 125, 0.9),
+    )
 );
-
-
 
 // 全量导入组件样式（可选）
 @use "element-plus/theme-chalk/src/index.scss" as *;
