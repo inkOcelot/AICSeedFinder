@@ -6,6 +6,7 @@ import com.inkocelot.model.Respond;
 import com.inkocelot.model.Seed;
 import com.inkocelot.model.mode.SingleThreadConf;
 import com.inkocelot.model.mode.SlidingWindowMappedConf;
+import com.inkocelot.utils.ClipboardFilePaths;
 import com.inkocelot.utils.analyzer.ParallelSeedAnalyzer;
 import com.inkocelot.utils.analyzer.SeedAnalyzer;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +67,43 @@ public class Main {
                     true, "请求成功", null,
                     Map.of("cores", Runtime.getRuntime().availableProcessors())
             ));
+        });
+
+        // 获取剪贴板中文件路径
+        get("/path", (req, res) -> {
+            res.type("application/json");
+
+            try {
+                var path = ClipboardFilePaths.get();
+
+                // 检查路径是否为空
+                if (path == null) {
+                    res.status(500);
+                    return mapper.writeValueAsString(new Respond(
+                            false, "请求失败, path可能为空", null, null
+                    ));
+                }
+
+                // 检查文件后缀
+                if (!path.endsWith(".aicseed")) {
+                    res.status(500);
+                    return mapper.writeValueAsString(new Respond(
+                            false, "文件的后缀错误", null, null
+                    ));
+                }
+
+                // 成功返回路径
+                return mapper.writeValueAsString(new Respond(
+                        true, "请求成功", null, Map.of("path", path)
+                ));
+
+            } catch (Exception e) {
+                res.status(500);
+                log.warn("读取文件路径时出现错误", e);
+                return mapper.writeValueAsString(new Respond(
+                        false, "请求失败, 错误: " + e.getMessage(), null, null
+                ));
+            }
         });
 
         // 筛选种子并评分
