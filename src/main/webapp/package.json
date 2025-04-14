@@ -13,11 +13,15 @@
     "vue": "^3.5.13"
   },
   "devDependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
     "@esbuild/linux-x64": "^0.25.2",
     "@vitejs/plugin-vue": "^5.2.3",
+    "sass": "^1.86.3",
+    "sass-loader": "^16.0.5",
     "unplugin-auto-import": "^19.1.2",
     "unplugin-vue-components": "^28.4.1",
     "vite": "^6.2.4",
     "vite-plugin-vue-devtools": "^7.7.2"
-  }
+  },
+  "packageManager": "pnpm@10.8.0+sha512.0e82714d1b5b43c74610193cb20734897c1d00de89d0e18420aebc5977fa13d780a9cb05734624e81ebd81cc876cd464794850641c48b9544326b5622ca29971"
 }
