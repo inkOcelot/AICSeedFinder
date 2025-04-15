@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SeedCondition {
-    private String enemyId;
+    private EnemyCondition enemy;
     private String operator;
     private int value;
     private int score;

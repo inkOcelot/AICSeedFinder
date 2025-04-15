@@ -3,34 +3,19 @@ package com.inkocelot.utils.factory;
 import com.inkocelot.model.Enemy;
 import com.inkocelot.model.Seed;
 import com.inkocelot.model.cond.Conditions;
-import com.inkocelot.model.cond.SeedCondition;
-import com.inkocelot.utils.file.LittleEndianDataReader;
 import com.inkocelot.utils.file.LittleEndianReader;
-import com.inkocelot.utils.file.SlidingWindowLittleEndianReader;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 public class SeedFactory {
 
     public static Seed createFromFile(
-            LittleEndianDataReader reader,
-            Conditions conditions
-    ) throws IOException {
-        return createSeed(reader, conditions);
-    }
-
-    public static Seed createFromFile(
-            SlidingWindowLittleEndianReader reader,
-            Conditions conditions
-    ) throws IOException {
-        return createSeed(reader, conditions);
-    }
-
-    private static Seed createSeed(
             LittleEndianReader reader,
             Conditions conditions
     ) throws IOException {
@@ -48,34 +33,40 @@ public class SeedFactory {
 
         var count = reader.readInt();
         var score = 0;
-        var enemyCount = new HashMap<String ,Integer>();
+        var seedRule = IntStream.range(0, conditions.getSeed().size())
+                .boxed()
+                .collect(Collectors.toMap(i -> i, conditions.getSeed()::get));
+
+        var seedCount = new HashMap<Integer, Integer>();
 
         // Enemy计分 从1开始数
         for (int i = 0; i < count; i++) {
             var enemy = EnemyFactory.createFromFile(
-                    reader, conditions.getEnemy(), count - i
+                    reader, seedRule, conditions.getEnemy(), count - i
             );
-            enemyCount.merge(enemy.getEnemyId(), 1, Integer::sum);
+            for (Integer seedMatch : enemy.getSeedMatches()) {
+                seedCount.put(seedMatch, seedCount.getOrDefault(seedMatch, 1));
+            }
             score += enemy.getScore();
             enemies.add(enemy);
         }
 
         // Seed计分
-        for (SeedCondition sc : conditions.getSeed()) {
-            var nowCount = enemyCount.get(sc.getEnemyId());
-            if (nowCount == null) {
-                continue;
-            }
-            var result = switch (sc.getOperator()) {
-                case "eq" -> nowCount == sc.getValue();
-                case "neq" -> nowCount != sc.getValue();
-                case "lt" -> nowCount < sc.getValue();
-                case "lte" -> nowCount <= sc.getValue();
-                case "gt" -> nowCount > sc.getValue();
-                case "gte" -> nowCount >= sc.getValue();
+        for (var entry : seedCount.entrySet()) {
+            var seedRuleId = entry.getKey();
+            var currentCount = entry.getValue();
+            var currentSeedRule = seedRule.get(seedRuleId);
+
+            var result = switch (currentSeedRule.getOperator()) {
+                case "eq" -> currentCount == currentSeedRule.getValue();
+                case "neq" -> currentCount != currentSeedRule.getValue();
+                case "lt" -> currentCount < currentSeedRule.getValue();
+                case "lte" -> currentCount <= currentSeedRule.getValue();
+                case "gt" -> currentCount > currentSeedRule.getValue();
+                case "gte" -> currentCount >= currentSeedRule.getValue();
                 default -> false;
             };
-            if (result) score += sc.getScore();
+            if (result) score += currentSeedRule.getScore();
         }
 
         if (reader.readInt() != 0x87654321) log.error("错误的文件格式 - 结束头丢失");
