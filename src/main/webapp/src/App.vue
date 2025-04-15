@@ -1,347 +1,243 @@
+<script setup>
+import { ref } from "vue";
+import axios from "axios";
+import { infoMsg, successMsg, warnMsg, errorMsg } from "./utils/msg";
+
+// 常量
+const enemyIdL10n = {
+  SLIME: "史莱姆",
+  MUSH: "蘑菇",
+  MAGE: "愚者",
+  PUPPY: "幼犬",
+  GOLEM: "木偶",
+  GOLEM_OD: "巨人",
+  GOLEM_OD2: "巨人",
+  FOX: "妖狐",
+  UNI: "剑山",
+  SNAKE: "土蛇",
+  SPONGE: "海绵",
+  GECKO: "壁虎",
+  FROG: "沼蛙",
+  BOSS_NUSI: "森之领主",
+  MKB: "三角木马",
+  MECHGOLEM: "机甲木偶",
+};
+
+const activeTab = ref("conf");
+const mode = ref("1");
+const ruleTab = ref("seed");
+
+// 参数配置
+const baseURL = ref("localhost");
+const port = ref("2641");
+
+// 单线程
+const buffer = ref(8);
+
+// 多线程
+const threads = ref(8);
+const windowSize = ref(4);
+const chunkBuffer = ref(8);
+const multBuffer = ref(8);
+
+// 堆大小
+const size = ref(20);
+
+// 后端连接
+const apiClient = () =>
+  axios.create({
+    baseURL: baseURL.value + ":" + port.value,
+    timeout: 0,
+    headers: { "Content-Type": "application/json" },
+  });
+
+const getPath = () => {
+  return apiClient.get("/path");
+};
+
+const searchSeeds = (data) => {
+  return apiClient.post("/seedfinder", data);
+};
+
+// 文件路径
+const path = ref("");
+
+// 规则
+const seedRuleData = ref({});
+</script>
+
 <template>
   <div id="aic-seed-finder-container">
-    <el-container>
-      <!-- 头部区域 -->
-      <el-header height="80px">
-        <div class="header-content">
-          <h1>Alice In Cradle 种子查找器</h1>
-        </div>
+    <el-container :direction="vertical">
+      <el-header height="100px">
+        <!-- Header content -->
+        <h1>Alice In Cradle 种子查找器</h1>
       </el-header>
-
-      <el-main>
-        <el-steps :active="activeStep" finish-status="success" align-center>
-          <el-step title="选择文件"></el-step>
-          <el-step title="配置参数"></el-step>
-          <el-step title="添加规则"></el-step>
-        </el-steps>
-
-        <div class="step-content">
-          <!-- 第一步：选择文件 -->
-          <div v-show="activeStep === 0" class="step-panel">
-            <el-button type="primary" @click="getClipboardPath">获取剪贴板中文件路径</el-button>
-            <div v-if="selectedFile" style="margin-top: 10px;">
-              <el-tag closable @close="clearSelectedFile">{{ selectedFile }}</el-tag>
+      <el-main class="centered-main">
+        <!-- Main content -->
+        <el-tabs v-model="activeTab" class="tabs">
+          <el-tab-pane label="参数配置" name="conf">
+            <div class="row">
+              <span class="f4"
+                ><el-input
+                  v-model="baseURL"
+                  placeholder="请输入后端URL"
+                  size="normal"
+                  clearable
+                  @change=""
+                  ><template #prepend>http://</template></el-input
+                ></span
+              >
+              <span class="f1"
+                ><el-input-number
+                  v-model="port"
+                  :min="0"
+                  :max="65535"
+                  controls-position="right"
+                  placeholder="情书"
+                  size="normal"
+                  @change="handleChange"
+              /></span>
             </div>
-          </div>
-
-          <!-- 第二步：配置参数 -->
-          <div v-show="activeStep === 1" class="step-panel">
-            <el-form label-width="120px">
-              <el-form-item label="运行模式">
-                <el-select v-model="config.mode" placeholder="请选择运行模式">
-                  <el-option label="单线程" :value="1"></el-option>
-                  <el-option label="多线程分块" :value="2"></el-option>
-                </el-select>
-              </el-form-item>
-
-              <!-- 单线程配置 -->
-              <div v-if="config.mode === 1">
-                <el-form-item label="缓冲区大小">
-                  <el-input-number v-model="config.buffer" :min="1"></el-input-number>
-                </el-form-item>
-              </div>
-
-              <!-- 多线程配置 -->
-              <div v-else-if="config.mode === 2">
-                <el-form-item label="线程数">
-                  <el-input-number v-model="config.threads" :min="1"></el-input-number>
-                </el-form-item>
-                <el-form-item label="窗口大小(MB)">
-                  <el-input-number v-model="config.windowSize" :min="1"></el-input-number>
-                </el-form-item>
-                <el-form-item label="分区缓冲大小(MB)">
-                  <el-input-number v-model="config.chunkBuffer" :min="1"></el-input-number>
-                </el-form-item>
-                <el-form-item label="缓冲区大小(MB)">
-                  <el-input-number v-model="config.buffer" :min="1"></el-input-number>
-                </el-form-item>
-              </div>
-
-              <el-form-item label="堆大小">
-                <el-input-number v-model="config.size" :min="1"></el-input-number>
-              </el-form-item>
-            </el-form>
-          </div>
-
-          <!-- 第三步：添加规则 -->
-          <div v-show="activeStep === 2" class="step-panel">
-            <el-tabs v-model="activeRuleTab">
-              <el-tab-pane label="Seed规则" name="seed">
-                <el-button type="primary" @click="addSeedRule">添加Seed规则</el-button>
-                <el-table :data="rules.seed" border style="width: 100%; margin-top: 10px;">
-                  <el-table-column prop="enemyId" label="怪物ID">
-                    <template #default="{ row }">
-                      <el-select v-model="row.enemyId" placeholder="请选择怪物">
-                        <el-option v-for="(value, key) in enemyL10n" :key="key" :label="value" :value="key"></el-option>
-                      </el-select>
+            <div class="row">
+              <span class="f1"
+                ><el-button @click="infoMsg('这是消息')" style="width: 100%"
+                  >获取剪贴板中文件路径</el-button
+                ></span
+              >
+              <span class="f3">
+                <el-input
+                  v-model="path"
+                  placeholder="请输入文件路径"
+                  clearable
+                  @change=""
+                ></el-input>
+              </span>
+            </div>
+            <div class="row">
+              <el-tabs v-model="mode" type="card">
+                <el-tab-pane label="单线程" name="1">
+                  <div class="row">
+                    <el-text
+                      >通过缓冲流以单线程处理种子文件,
+                      适合较小的种子文件</el-text
+                    >
+                  </div>
+                  <div class="row">
+                    <span class="f1 row">
+                      <span class="f1"><el-text>缓冲区大小</el-text></span>
+                      <span class="f1"
+                        ><el-input-number v-model="buffer" :min="1">
+                          <template #suffix>
+                            <span>MB</span>
+                          </template>
+                        </el-input-number></span
+                      >
+                    </span>
+                    <span class="f1"></span>
+                  </div>
+                </el-tab-pane>
+                <el-tab-pane label="多线程" name="2">
+                  <div class="row">
+                    <el-text>
+                      通过文件分区以及内存映射技术，以多线程方式处理种子文件，适合较大的文件
+                    </el-text>
+                  </div>
+                  <div class="row">
+                    <span class="f1"><el-text>线程数</el-text></span>
+                    <span class="f1"
+                      ><el-input-number v-model="threads" :min="1">
+                      </el-input-number
+                    ></span>
+                    <span class="f1"><el-text>窗口大小</el-text></span>
+                    <span class="f1"
+                      ><el-input-number v-model="windowSize" :min="1">
+                        <template #suffix>
+                          <span>MB</span>
+                        </template>
+                      </el-input-number></span
+                    >
+                  </div>
+                  <div class="row">
+                    <span class="f1"><el-text>分区缓冲大小</el-text></span>
+                    <span class="f1"
+                      ><el-input-number v-model="chunkBuffer" :min="1">
+                        <template #suffix>
+                          <span>MB</span>
+                        </template>
+                      </el-input-number></span
+                    >
+                    <span class="f1"><el-text>读取缓冲大小</el-text></span>
+                    <span class="f1">
+                      <el-input-number v-model="multBuffer" :min="1">
+                        <template #suffix>
+                          <span>MB</span>
+                        </template>
+                      </el-input-number>
+                    </span>
+                  </div>
+                </el-tab-pane>
+              </el-tabs>
+            </div>
+            <div class="row">
+              <span class="f1">
+                <el-text>堆大小</el-text>
+              </span>
+              <span class="f1">
+                <el-input-number v-model="size" :min="1"> </el-input-number>
+              </span>
+              <span class="f3"></span>
+            </div>
+          </el-tab-pane>
+          <el-tab-pane label="得分规则" name="cond">
+            <el-tabs v-model="ruleTab" type="card">
+              <el-tab-pane label="种子规则" name="seed">
+                种子规则
+                <!-- <el-table
+                  :data="seedRuleData"
+                  style="width: 100%"
+                  max-height="100%"
+                >
+                  <el-table-column
+                    fixed
+                    prop="enemyId"
+                    label="怪物ID"
+                    width="150"
+                  />
+                  <el-table-column prop="operator" label="操作符" width="120" />
+                  <el-table-column prop="value" label="值" width="120" />
+                  <el-table-column prop="score" label="得分" width="120" />
+                  <el-table-column fixed="right" label="操作" min-width="80">
+                    <template #default="row">
+                      <el-button
+                        link
+                        type="primary"
+                        size="small"
+                        @click.prevent="deleteSeedRule(scope.$index)"
+                      >
+                        删除
+                      </el-button>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="operator" label="操作符">
-                    <template #default="{ row }">
-                      <el-select v-model="row.operator" placeholder="请选择操作符">
-                        <el-option label="等于" value="eq"></el-option>
-                        <el-option label="不等于" value="neq"></el-option>
-                        <el-option label="小于" value="lt"></el-option>
-                        <el-option label="小于等于" value="lte"></el-option>
-                        <el-option label="大于" value="gt"></el-option>
-                        <el-option label="大于等于" value="gte"></el-option>
-                      </el-select>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="value" label="值">
-                    <template #default="{ row }">
-                      <el-input-number v-model="row.value" :min="0"></el-input-number>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="score" label="分数">
-                    <template #default="{ row }">
-                      <el-input-number v-model="row.score"></el-input-number>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="操作">
-                    <template #default="{ $index }">
-                      <el-button type="danger" @click="removeSeedRule($index)">删除</el-button>
-                    </template>
-                  </el-table-column>
-                </el-table>
+                </el-table> -->
+                <el-button style="width: 100%" @click="addSeedRule">
+                  添加规则
+                </el-button>
               </el-tab-pane>
-
-              <el-tab-pane label="Enemy规则" name="enemy">
-                <el-button type="primary" @click="addEnemyRule">添加Enemy规则</el-button>
-                <el-table :data="rules.enemy" border style="width: 100%; margin-top: 10px;">
-                  <el-table-column prop="enemyId" label="怪物ID">
-                    <template #default="{ row }">
-                      <el-select v-model="row.enemyId" placeholder="请选择怪物" clearable>
-                        <el-option v-for="(value, key) in enemyL10n" :key="key" :label="value" :value="key"></el-option>
-                      </el-select>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="isOverride" label="污染体">
-                    <template #default="{ row }">
-                      <el-checkbox v-model="row.isOverride"></el-checkbox>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="attrs" label="属性">
-                    <template #default="{ row }">
-                      <el-select v-model="row.attrs" multiple placeholder="请选择属性" style="width: 100%">
-                        <el-option v-for="(value, key) in attrs" :key="value" :label="key" :value="value"></el-option>
-                      </el-select>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="order" label="序号">
-                    <template #default="{ row }">
-                      <el-input-number v-model="row.order" :min="0" :max="20" :controls="false"></el-input-number>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="score" label="分数">
-                    <template #default="{ row }">
-                      <el-input-number v-model="row.score"></el-input-number>
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="操作">
-                    <template #default="{ $index }">
-                      <el-button type="danger" @click="removeEnemyRule($index)">删除</el-button>
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </el-tab-pane>
+              <el-tab-pane label="怪物规则" name="enemy">怪物规则</el-tab-pane>
             </el-tabs>
-          </div>
-        </div>
-
-        <div class="action-buttons">
-          <el-button v-if="activeStep > 0" @click="prevStep">上一步</el-button>
-          <el-button v-if="activeStep < 2" type="primary" @click="nextStep">下一步</el-button>
-          <el-button v-if="activeStep === 2" type="success" @click="submitForm" :loading="loading">开始查找</el-button>
-        </div>
-
-        <!-- 结果展示 -->
-        <div v-if="resultData" class="result-container">
-          <h3>查找结果 (耗时: {{ resultData.duration }}ms)</h3>
-          <el-table :data="resultData.data" border style="width: 100%">
-            <el-table-column prop="attempt" label="尝试次数" width="100"></el-table-column>
-            <el-table-column label="种子">
-              <template #default="{ row }">
-                <div>种子1: {{ row.seed1.join(', ') }}</div>
-                <div>种子2: {{ row.seed2.join(', ') }}</div>
-                <div>种子3: {{ row.seed3.join(', ') }}</div>
-              </template>
-            </el-table-column>
-            <el-table-column label="敌人列表">
-              <template #default="{ row }">
-                <div v-for="(enemy, index) in row.enemies" :key="index">
-                  {{ enemyL10n[enemy.enemyId] || enemy.enemyId }} -
-                  属性: {{ formatAttrs(enemy.attr) }} -
-                  {{ enemy.overdrive ? '污染体' : '普通' }} -
-                  分数: {{ enemy.score }}
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column prop="score" label="总分" width="100"></el-table-column>
-          </el-table>
-        </div>
+          </el-tab-pane>
+          <el-tab-pane label="提交 & 结果显示" name="submit"
+            >提交 & 结果显示</el-tab-pane
+          >
+        </el-tabs>
       </el-main>
+      <el-footer height="">
+        <!-- Footer content -->
+      </el-footer>
     </el-container>
   </div>
 </template>
-
-<script>
-import { ElMessage } from 'element-plus'
-import { getPath, searchSeeds } from './api/index.js'
-
-export default {
-  name: 'App',
-  data() {
-    return {
-      activeStep: 0,
-      activeRuleTab: 'seed',
-      selectedFile: null,
-      loading: false,
-      resultData: null,
-      enemyL10n: {
-        'SLIME': '史莱姆',
-        'MUSH': '蘑菇',
-        'MAGE': '愚者',
-        'PUPPY': '幼犬',
-        'GOLEM': '木偶',
-        'GOLEM_OD': '巨人',
-        'GOLEM_OD2': '巨人',
-        'FOX': '妖狐',
-        'UNI': '剑山',
-        'SNAKE': '土蛇',
-        'SPONGE': '海绵',
-        'GECKO': '壁虎',
-        'FROG': '沼蛙',
-        'BOSS_NUSI': '森之领主',
-        'MKB': '三角木马',
-        'MECHGOLEM': '机甲木偶',
-      },
-      attrs: {
-        '攻': 1,
-        '防': 2,
-        '稳': 4,
-        '火': 256,
-        '冰': 512,
-        '雷': 1024,
-        '粘': 2048,
-        '毒': 4096,
-        '隐': 65536,
-      },
-      config: {
-        mode: 1,
-        threads: 4,
-        windowSize: 4,
-        chunkBuffer: 8,
-        buffer: 64,
-        size: 20
-      },
-      rules: {
-        seed: [],
-        enemy: []
-      }
-    }
-  },
-  methods: {
-    nextStep() {
-      if (this.activeStep < 2) {
-        this.activeStep++
-      }
-    },
-    prevStep() {
-      if (this.activeStep > 0) {
-        this.activeStep--
-      }
-    },
-    async getClipboardPath() {
-      try {
-        const res = await getPath()
-        if (res.success) {
-          this.selectedFile = res.path
-        } else {
-          ElMessage.error(res.msg || '获取文件路径失败')
-        }
-      } catch (error) {
-        ElMessage.error('请求失败: ' + error.message)
-      }
-    },
-    clearSelectedFile() {
-      this.selectedFile = null
-    },
-    addSeedRule() {
-      this.rules.seed.push({
-        enemyId: '',
-        operator: 'gt',
-        value: 1,
-        score: -60
-      })
-    },
-    removeSeedRule(index) {
-      this.rules.seed.splice(index, 1)
-    },
-    addEnemyRule() {
-      this.rules.enemy.push({
-        enemyId: '',
-        isOverride: false,
-        attrs: [],
-        order: 0,
-        score: -20
-      })
-    },
-    removeEnemyRule(index) {
-      this.rules.enemy.splice(index, 1)
-    },
-    formatAttrs(attrValue) {
-      if (!attrValue) return '无'
-      const activeAttrs = []
-      for (const [name, value] of Object.entries(this.attrs)) {
-        if (attrValue & value) {
-          activeAttrs.push(name)
-        }
-      }
-      return activeAttrs.length ? activeAttrs.join(', ') : '无'
-    },
-    async submitForm() {
-      if (!this.selectedFile) {
-        ElMessage.error('请先选择文件')
-        return
-      }
-
-      const payload = {
-        type: 'local',
-        path: this.selectedFile,
-        conf: { ...this.config },
-        size: this.config.size,
-        cond: {
-          seed: this.rules.seed,
-          enemy: this.rules.enemy
-        }
-      }
-
-      // 清理不需要的配置项
-      if (payload.conf.mode === 1) {
-        delete payload.conf.threads
-        delete payload.conf.windowSize
-        delete payload.conf.chunkBuffer
-      }
-
-      try {
-        this.loading = true
-        const res = await searchSeeds(payload)
-        if (res.success) {
-          this.resultData = res
-          ElMessage.success(res.msg || '查找成功')
-        } else {
-          ElMessage.error(res.msg || '查找失败')
-        }
-      } catch (error) {
-        ElMessage.error('请求失败: ' + error.message)
-      } finally {
-        this.loading = false
-      }
-    }
-  }
-}
-</script>
 
 <style scoped>
 :global(body),
@@ -352,7 +248,41 @@ export default {
   overflow: hidden;
 }
 
-.aic-seed-finder-container {
+.el-tabs {
+  width: 70vw;
+}
+
+.el-input-number {
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  margin: 10px 0;
+}
+
+.f1 {
+  display: inline-flex;
+  flex: 1;
+}
+
+.f2 {
+  display: inline-flex;
+  flex: 2;
+}
+
+.f3 {
+  display: inline-flex;
+  flex: 3;
+}
+
+.f4 {
+  display: inline-flex;
+  flex: 4;
+}
+
+.el-container {
   position: relative;
   height: 100vh;
   width: 100vw;
@@ -363,5 +293,33 @@ export default {
   padding: 0;
   margin: 0;
   overflow: auto;
+}
+
+.el-tabs {
+  height: 100%;
+  /* border-radius: 20px; */
+  background-color: rgba(0, 0, 0, 0);
+  overflow: hidden;
+}
+
+.centered-main {
+  display: flex;
+  flex-direction: column;
+  width: 80vw;
+  height: 80vh;
+  align-items: center; /* 水平居中 */
+  padding: 20px 100px; /* 上下20px，左右100px */
+  margin: 0 auto; /* 水平居中 */
+  border-radius: 20px;
+
+  /* 半透明磨砂效果 */
+  background-color: rgba(14, 14, 14, 0.7); /* 调整透明度，0.7是70%不透明 */
+  backdrop-filter: blur(10px); /* 磨砂模糊效果，数值越大越模糊 */
+  -webkit-backdrop-filter: blur(10px); /* 兼容Safari */
+
+  /* 可选：添加边框效果增强磨砂质感 */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  overflow: hidden;
 }
 </style>
