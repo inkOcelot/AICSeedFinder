@@ -4,25 +4,47 @@ import axios from "axios";
 import { infoMsg, successMsg, warnMsg, errorMsg } from "./utils/msg";
 
 // 常量
-const enemyIdL10n = {
-  SLIME: "史莱姆",
-  MUSH: "蘑菇",
-  MAGE: "愚者",
-  PUPPY: "幼犬",
-  GOLEM: "木偶",
-  GOLEM_OD: "巨人",
-  GOLEM_OD2: "巨人",
-  FOX: "妖狐",
-  UNI: "剑山",
-  SNAKE: "土蛇",
-  SPONGE: "海绵",
-  GECKO: "壁虎",
-  FROG: "沼蛙",
-  BOSS_NUSI: "森之领主",
-  MKB: "三角木马",
-  MECHGOLEM: "机甲木偶",
-};
+const enemyIdMap = [
+  { label: "史莱姆", value: "SLIME" },
+  { label: "蘑菇", value: "MUSH" },
+  { label: "愚者", value: "MAGE" },
+  { label: "幼犬", value: "PUPPY" },
+  { label: "木偶", value: "GOLEM" },
+  { label: "巨人", value: "GOLEM_OD" },
+  { label: "巨人", value: "GOLEM_OD2" },
+  { label: "妖狐", value: "FOX" },
+  { label: "剑山", value: "UNI" },
+  { label: "土蛇", value: "SNAKE" },
+  { label: "海绵", value: "SPONGE" },
+  { label: "壁虎", value: "GECKO" },
+  { label: "沼蛙", value: "FROG" },
+  { label: "森之领主", value: "BOSS_NUSI" },
+  { label: "三角木马", value: "MKB" },
+  { label: "机甲木偶", value: "MECHGOLEM" },
+];
 
+const attrsMap = [
+  { label: "攻", value: "1" },
+  { label: "防", value: "2" },
+  { label: "稳", value: "4" },
+  { label: "火", value: "256" },
+  { label: "冰", value: "512" },
+  { label: "雷", value: "1024" },
+  { label: "粘", value: "2048" },
+  { label: "毒", value: "4096" },
+  { label: "隐", value: "65536" },
+];
+
+const operatorMap = [
+  { label: "=", value: "eq" },
+  { label: "≠", value: "neq" },
+  { label: "<", value: "lt" },
+  { label: "≤", value: "lte" },
+  { label: ">", value: "gt" },
+  { label: "≥", value: "gte" },
+];
+
+// tab标签页
 const activeTab = ref("conf");
 const mode = ref("1");
 const ruleTab = ref("seed");
@@ -63,7 +85,20 @@ const searchSeeds = (data) => {
 const path = ref("");
 
 // 规则
-const seedRuleData = ref({});
+const seedRuleData = ref([]);
+
+const addSeedRule = () => {
+  seedRuleData.value.push({
+    enemy: {
+      enemyId: null,
+      isOverride: null,
+      attrs: [],
+    },
+    operator: "eq",
+    value: 0,
+    score: 0,
+  });
+};
 </script>
 
 <template>
@@ -94,9 +129,8 @@ const seedRuleData = ref({});
                   :min="0"
                   :max="65535"
                   controls-position="right"
-                  placeholder="情书"
+                  placeholder="请输入端口号"
                   size="normal"
-                  @change="handleChange"
               /></span>
             </div>
             <div class="row">
@@ -127,14 +161,18 @@ const seedRuleData = ref({});
                     <span class="f1 row">
                       <span class="f1"><el-text>缓冲区大小</el-text></span>
                       <span class="f1"
-                        ><el-input-number v-model="buffer" :min="1">
+                        ><el-input-number
+                          v-model="buffer"
+                          :min="1"
+                          controls-position="right"
+                        >
                           <template #suffix>
                             <span>MB</span>
                           </template>
                         </el-input-number></span
                       >
                     </span>
-                    <span class="f1"></span>
+                    <span class="f2"></span>
                   </div>
                 </el-tab-pane>
                 <el-tab-pane label="多线程" name="2">
@@ -146,12 +184,20 @@ const seedRuleData = ref({});
                   <div class="row">
                     <span class="f1"><el-text>线程数</el-text></span>
                     <span class="f1"
-                      ><el-input-number v-model="threads" :min="1">
+                      ><el-input-number
+                        v-model="threads"
+                        :min="1"
+                        controls-position="right"
+                      >
                       </el-input-number
                     ></span>
                     <span class="f1"><el-text>窗口大小</el-text></span>
                     <span class="f1"
-                      ><el-input-number v-model="windowSize" :min="1">
+                      ><el-input-number
+                        v-model="windowSize"
+                        :min="1"
+                        controls-position="right"
+                      >
                         <template #suffix>
                           <span>MB</span>
                         </template>
@@ -161,7 +207,11 @@ const seedRuleData = ref({});
                   <div class="row">
                     <span class="f1"><el-text>分区缓冲大小</el-text></span>
                     <span class="f1"
-                      ><el-input-number v-model="chunkBuffer" :min="1">
+                      ><el-input-number
+                        v-model="chunkBuffer"
+                        :min="1"
+                        controls-position="right"
+                      >
                         <template #suffix>
                           <span>MB</span>
                         </template>
@@ -169,7 +219,11 @@ const seedRuleData = ref({});
                     >
                     <span class="f1"><el-text>读取缓冲大小</el-text></span>
                     <span class="f1">
-                      <el-input-number v-model="multBuffer" :min="1">
+                      <el-input-number
+                        v-model="multBuffer"
+                        :min="1"
+                        controls-position="right"
+                      >
                         <template #suffix>
                           <span>MB</span>
                         </template>
@@ -184,16 +238,20 @@ const seedRuleData = ref({});
                 <el-text>堆大小</el-text>
               </span>
               <span class="f1">
-                <el-input-number v-model="size" :min="1"> </el-input-number>
+                <el-input-number
+                  v-model="size"
+                  :min="1"
+                  controls-position="right"
+                />
               </span>
-              <span class="f3"></span>
+              <span class="f4"></span>
             </div>
           </el-tab-pane>
           <el-tab-pane label="得分规则" name="cond">
             <el-tabs v-model="ruleTab" type="card">
               <el-tab-pane label="种子规则" name="seed">
                 种子规则
-                <!-- <el-table
+                <el-table
                   :data="seedRuleData"
                   style="width: 100%"
                   max-height="100%"
@@ -202,24 +260,89 @@ const seedRuleData = ref({});
                     fixed
                     prop="enemyId"
                     label="怪物ID"
-                    width="150"
-                  />
-                  <el-table-column prop="operator" label="操作符" width="120" />
-                  <el-table-column prop="value" label="值" width="120" />
-                  <el-table-column prop="score" label="得分" width="120" />
+                    width="120"
+                  >
+                    <template #default="{ row }">
+                      <el-select
+                        v-model="row.enemy.enemyId"
+                        placeholder="无限制"
+                      >
+                        <el-option label="无限制" :value="null"></el-option>
+                        <el-option
+                          v-for="entry in enemyIdMap"
+                          :label="entry.label"
+                          :value="entry.value"
+                        ></el-option>
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="isOverride" label="污染体" width="120">
+                    <template #default="{ row }">
+                      <el-select
+                        v-model="row.enemy.isOverride"
+                        placeholder="无限制"
+                      >
+                        <el-option label="无限制" :value="null"></el-option>
+                        <el-option label="是" :value="true"></el-option>
+                        <el-option label="否" :value="false"></el-option>
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="attrs" label="属性" width="180">
+                    <template #default="{ row }">
+                      <el-select
+                        v-model="row.enemy.attrs"
+                        multiple
+                        style="width: 100%"
+                      >
+                        <el-option
+                          v-for="attr in attrsMap"
+                          :label="attr.label"
+                          :value="attr.value"
+                        />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="operator" label="操作符" width="80">
+                    <template #default="{ row }">
+                      <el-select v-model="row.operator">
+                        <el-option
+                          v-for="operator in operatorMap"
+                          :label="operator.label"
+                          :value="operator.value"
+                        />
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="value" label="值" width="80">
+                    <template #default="{ row }">
+                      <el-input-number
+                        v-model="row.value"
+                        controls-position="right"
+                      />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="score" label="得分" width="80">
+                    <template #default="{ row }">
+                      <el-input-number
+                        v-model="row.score"
+                        controls-position="right"
+                      />
+                    </template>
+                  </el-table-column>
                   <el-table-column fixed="right" label="操作" min-width="80">
                     <template #default="row">
                       <el-button
                         link
                         type="primary"
                         size="small"
-                        @click.prevent="deleteSeedRule(scope.$index)"
+                        @click.prevent="deleteSeedRule(row.$index)"
                       >
                         删除
                       </el-button>
                     </template>
                   </el-table-column>
-                </el-table> -->
+                </el-table>
                 <el-button style="width: 100%" @click="addSeedRule">
                   添加规则
                 </el-button>
