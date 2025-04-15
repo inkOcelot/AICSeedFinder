@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 public class EnemyCondition {
     private String enemyId;
-    private Boolean isOverride;
+    private Boolean isOverdrive;
     private List<Integer> attrs;
     private Integer order;
     private Integer score;

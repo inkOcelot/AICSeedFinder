@@ -39,8 +39,8 @@ public class EnemyFactory {
         }
 
         // 判断是否为污染体
-        if (cond.getIsOverride() != null) {
-            if (overdrive != cond.getIsOverride()) {
+        if (cond.getIsOverdrive() != null) {
+            if (overdrive != cond.getIsOverdrive()) {
                 return false;
             }
         }
@@ -81,6 +81,6 @@ public class EnemyFactory {
             }
         }
 
-        return new Enemy(enemyId, attr, overdrive, score, seedMatches);
+        return new Enemy(order, enemyId, attr, overdrive, score, seedMatches);
     }
 }

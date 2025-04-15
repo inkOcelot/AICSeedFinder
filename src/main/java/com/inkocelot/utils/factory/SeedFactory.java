@@ -71,6 +71,6 @@ public class SeedFactory {
 
         if (reader.readInt() != 0x87654321) log.error("错误的文件格式 - 结束头丢失");
 
-        return new Seed(attempt, seed1, seed2, seed3, enemies, score);
+        return new Seed(attempt, seed1, seed2, seed3, enemies.reversed(), score);
     }
 }

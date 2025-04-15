@@ -10,6 +10,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Enemy {
+    private int order;
     private String enemyId;
     private int attr;
     private boolean overdrive;

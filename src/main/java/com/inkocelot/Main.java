@@ -60,10 +60,12 @@ public class Main {
 
         // 全局 CORS 设置
         before((request, response) -> {
-            response.header("Access-Control-Allow-Origin", "*"); // 允许所有来源
+            response.header("Access-Control-Allow-Origin", "*");
             response.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
             response.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
         });
+
+        options("/*", (request, response) -> "OK");
 
         // 获取剪贴板中文件路径
         get("/path", (req, res) -> {
