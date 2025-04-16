@@ -12,7 +12,7 @@ import java.util.List;
 public class EnemyCondition {
     private String enemyId;
     private Boolean isOverdrive;
-    private List<Integer> attrs;
+    private Integer attrs;
     private Integer order;
     private Integer score;
 }

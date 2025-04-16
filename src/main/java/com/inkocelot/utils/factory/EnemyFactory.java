@@ -47,7 +47,7 @@ public class EnemyFactory {
 
         // 判断属性是否匹配
         if (cond.getAttrs() != null) {
-            return cond.getAttrs().stream().noneMatch(n -> isZero(attr & n));
+            return isZero((~attr) & cond.getAttrs());
         }
         return true;
     }

@@ -33,7 +33,7 @@ public class SeedFactory {
 
         var count = reader.readInt();
         var score = 0;
-        var seedRule = IntStream.range(0, conditions.getSeed().size())
+        var seedRules = IntStream.range(0, conditions.getSeed().size())
                 .boxed()
                 .collect(Collectors.toMap(i -> i, conditions.getSeed()::get));
 
@@ -42,7 +42,7 @@ public class SeedFactory {
         // Enemy计分 从1开始数
         for (int i = 0; i < count; i++) {
             var enemy = EnemyFactory.createFromFile(
-                    reader, seedRule, conditions.getEnemy(), count - i
+                    reader, seedRules, conditions.getEnemy(), count - i
             );
             for (Integer seedMatch : enemy.getSeedMatches()) {
                 seedCount.put(seedMatch, seedCount.getOrDefault(seedMatch, 1));
@@ -55,7 +55,7 @@ public class SeedFactory {
         for (var entry : seedCount.entrySet()) {
             var seedRuleId = entry.getKey();
             var currentCount = entry.getValue();
-            var currentSeedRule = seedRule.get(seedRuleId);
+            var currentSeedRule = seedRules.get(seedRuleId);
 
             var result = switch (currentSeedRule.getOperator()) {
                 case "eq" -> currentCount == currentSeedRule.getValue();
