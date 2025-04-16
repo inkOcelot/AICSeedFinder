@@ -1,10 +1,11 @@
 <script setup>
-import { onMounted, onUnmounted, ref } from "vue";
+import { onMounted, ref } from "vue";
 import axios from "axios";
+import { saveAs } from "file-saver";
+import table from "text-table";
 import { successMsg, warnMsg, errorMsg } from "./utils/msg";
 import { useWindowSize } from "@vueuse/core";
 
-// 常量
 const enemyIdL10n = {
   SLIME: "史莱姆",
   MUSH: "蘑菇",
@@ -56,15 +57,15 @@ const attrsMap = [
 ];
 
 const attrsMapWithColor = [
-  { label: "<span style='color: #FF7D7D'>攻</span>", value: 1 }, // 柔和红
-  { label: "<span style='color: #7DA7FF'>防</span>", value: 2 }, // 柔和蓝
-  { label: "<span style='color: #B0B0B0'>稳</span>", value: 4 }, // 浅灰
-  { label: "<span style='color: #FF9E80'>火</span>", value: 256 }, // 柔和橙红
-  { label: "<span style='color: #81D4FA'>冰</span>", value: 512 }, // 柔和冰蓝
-  { label: "<span style='color: #FFF176'>雷</span>", value: 1024 }, // 柔和黄
-  { label: "<span style='color: #AED581'>粘</span>", value: 2048 }, // 柔和绿
-  { label: "<span style='color: #CE93D8'>毒</span>", value: 4096 }, // 柔和紫
-  { label: "<span style='color: #78909C'>隐</span>", value: 65536 }, // 柔和灰蓝
+  { label: "<span style='color: #FF7D7D'>攻</span>", value: 1 },
+  { label: "<span style='color: #7DA7FF'>防</span>", value: 2 },
+  { label: "<span style='color: #B0B0B0'>稳</span>", value: 4 },
+  { label: "<span style='color: #FF9E80'>火</span>", value: 256 },
+  { label: "<span style='color: #81D4FA'>冰</span>", value: 512 },
+  { label: "<span style='color: #FFF176'>雷</span>", value: 1024 },
+  { label: "<span style='color: #AED581'>粘</span>", value: 2048 },
+  { label: "<span style='color: #CE93D8'>毒</span>", value: 4096 },
+  { label: "<span style='color: #78909C'>隐</span>", value: 65536 },
 ];
 
 const operatorMap = [
@@ -76,28 +77,19 @@ const operatorMap = [
   { label: "≥", value: "gte" },
 ];
 
-// tab标签页
 const activeTab = ref("conf");
 const mode = ref("1");
 const ruleTab = ref("seed");
 
-// 参数配置
 const baseURL = ref("localhost");
 const port = ref(2641);
-
-// 单线程
 const buffer = ref(8);
-
-// 多线程
 const threads = ref(8);
 const windowSize = ref(4);
 const chunkBuffer = ref(8);
 const multBuffer = ref(8);
-
-// 堆大小
 const size = ref(20);
 
-// 保存参数配置
 const saveConfig = () => {
   const config = {
     baseURL: baseURL.value,
@@ -119,32 +111,26 @@ const saveConfig = () => {
 
 const loadConfig = () => {
   const config = JSON.parse(localStorage.getItem("config"));
-  if (config === null) {
-    return false;
-  } else {
-    baseURL.value = config.baseURL;
-    port.value = config.port;
-    path.value = config.path;
-    mode.value = config.mode;
-    buffer.value = config.buffer;
-    threads.value = config.threads;
-    windowSize.value = config.windowSize;
-    chunkBuffer.value = config.chunkBuffer;
-    multBuffer.value = config.multBuffer;
-    size.value = config.size;
-    seedRuleData.value = config.seedRules;
-    enemyRuleData.value = config.enemyRules;
-    successMsg("已从存储中加载参数配置");
-    return true;
-  }
+  if (config === null) return false;
+
+  baseURL.value = config.baseURL;
+  port.value = config.port;
+  path.value = config.path;
+  mode.value = config.mode;
+  buffer.value = config.buffer;
+  threads.value = config.threads;
+  windowSize.value = config.windowSize;
+  chunkBuffer.value = config.chunkBuffer;
+  multBuffer.value = config.multBuffer;
+  size.value = config.size;
+  seedRuleData.value = config.seedRules;
+  enemyRuleData.value = config.enemyRules;
+  successMsg("已从存储中加载参数配置");
+  return true;
 };
 
 const manualLoadConfig = () => {
-  const flag = loadConfig();
-  if (!flag) {
-    warnMsg("存储中没有参数配置");
-    return;
-  }
+  if (!loadConfig()) warnMsg("存储中没有参数配置");
 };
 
 const deleteConfig = () => {
@@ -156,7 +142,6 @@ const deleteConfig = () => {
   }
 };
 
-// 后端连接
 const apiClient = () =>
   axios.create({
     baseURL: `http://${baseURL.value}:${port.value}`,
@@ -164,15 +149,9 @@ const apiClient = () =>
     headers: { "Content-Type": "application/json" },
   });
 
-const getPath = () => {
-  return apiClient().get("/path");
-};
+const getPath = () => apiClient().get("/path");
+const searchSeeds = (data) => apiClient().post("/seedfinder", data);
 
-const searchSeeds = (data) => {
-  return apiClient().post("/seedfinder", data);
-};
-
-// 文件路径
 const path = ref("");
 
 const getClipboradPath = async () => {
@@ -189,9 +168,7 @@ const getClipboradPath = async () => {
   }
 };
 
-// 规则
 const seedRuleData = ref([]);
-
 const addSeedRule = () => {
   seedRuleData.value.push({
     enemy: {
@@ -205,16 +182,10 @@ const addSeedRule = () => {
   });
 };
 
-const deleteSeedRule = (index) => {
-  seedRuleData.value.splice(index, 1);
-};
-
-const clearSeedRule = () => {
-  seedRuleData.value = [];
-};
+const deleteSeedRule = (index) => seedRuleData.value.splice(index, 1);
+const clearSeedRule = () => (seedRuleData.value = []);
 
 const enemyRuleData = ref([]);
-
 const addEnemyRule = () => {
   enemyRuleData.value.push({
     enemyId: null,
@@ -225,15 +196,9 @@ const addEnemyRule = () => {
   });
 };
 
-const deleteEnemyRule = (index) => {
-  enemyRuleData.value.splice(index, 1);
-};
+const deleteEnemyRule = (index) => enemyRuleData.value.splice(index, 1);
+const clearEnemyRule = () => (enemyRuleData.value = []);
 
-const clearEnemyRule = () => {
-  enemyRuleData.value = [];
-};
-
-// 保存配置
 const configName = ref("");
 const ruleConfig = ref([]);
 const chooseConfigName = ref("");
@@ -261,11 +226,7 @@ const saveRuleConfig = () => {
 const updateRuleConfig = () => {
   try {
     const result = JSON.parse(localStorage.getItem("ruleConfig"));
-    if (result === null) {
-      ruleConfig.value = [];
-    } else {
-      ruleConfig.value = result;
-    }
+    ruleConfig.value = result === null ? [] : result;
   } catch (err) {
     localStorage.setItem("ruleConfig", JSON.stringify([]));
     ruleConfig.value = [];
@@ -282,7 +243,6 @@ const deleteRuleConfig = () => {
   );
   localStorage.setItem("ruleConfig", JSON.stringify(ruleConfig.value));
   chooseConfigName.value = "";
-
   successMsg("配置删除成功");
 };
 
@@ -296,17 +256,13 @@ const loadRuleConfig = () => {
   )[0];
   seedRuleData.value = loadConfig.cond.seed;
   enemyRuleData.value = enemyRuleData.cond.enemy;
-
   successMsg("配置已加载");
 };
 
-// 获取结果数据
 const resultData = ref([]);
 
 const formatMilliseconds = (ms) => {
-  if (Math.abs(ms) < 1000) {
-    return `${ms}毫秒`;
-  }
+  if (Math.abs(ms) < 1000) return `${ms}毫秒`;
 
   let seconds = ms / 1000;
   if (seconds < 60) {
@@ -336,7 +292,6 @@ const formatMilliseconds = (ms) => {
 };
 
 const getResult = async () => {
-  // 填文件名
   if (path.value === "") {
     warnMsg("文件路径为空");
     return;
@@ -349,10 +304,7 @@ const getResult = async () => {
 
   let conf;
   if (mode.value === "1") {
-    conf = {
-      mode: 1,
-      buffer: buffer.value,
-    };
+    conf = { mode: 1, buffer: buffer.value };
   } else if (mode.value === "2") {
     conf = {
       mode: 2,
@@ -363,37 +315,45 @@ const getResult = async () => {
     };
   }
 
+  const converterSeedRules = seedRuleData.value.map((v) => {
+    const newAttrs = v.enemy.attrs.reduce((acc, cur) => acc | cur);
+    let newEnemy = v.enemy;
+    newEnemy.attrs = newAttrs;
+    return newEnemy;
+  });
+
+  const converterEnemyRules = enemyRuleData.value.map((v) => {
+    const newAttrs = v.attrs.reduce((acc, cur) => acc | cur);
+    let newEnemy = v;
+    newEnemy.attrs = newAttrs;
+    return newEnemy;
+  });
+
   const req = {
     type: "local",
     path: path.value,
     conf: conf,
     size: size.value,
     cond: {
-      seed: seedRuleData.value,
-      enemy: enemyRuleData.value,
+      seed: converterSeedRules,
+      enemy: converterEnemyRules,
     },
   };
 
   try {
     const res = await searchSeeds(req);
-
     if (!res.data.success) {
       warnMsg(res.data.msg);
       return;
     }
 
     const result = res.data.data;
-
-    // 替换为更友好的显示
     result.forEach((seed) => {
       seed.enemies.forEach((enemy) => {
         enemy.enemyId = enemyIdL10n[enemy.enemyId];
-
-        if (enemy.overdrive) {
-          enemy.overdrive = "<strong>是</strong>";
-        } else {
-          enemy.overdrive = "<span style='color: #808080'>否</span>";
-        }
+        enemy.overdrive = enemy.overdrive
+          ? "<strong>是</strong>"
+          : "<span style='color: #808080'>否</span>";
 
         const attr = enemy.attr;
         let attrs = [];
@@ -401,16 +361,14 @@ const getResult = async () => {
           if (attr & map.value) attrs.push(map.label);
         });
 
-        if (attrs.length === 0) {
-          enemy.attr = "<span style='color: #808080'>无</span>";
-        } else {
-          enemy.attr = attrs.join(", ");
-        }
+        enemy.attr =
+          attrs.length === 0
+            ? "<span style='color: #808080'>无</span>"
+            : attrs.join(", ");
       });
     });
 
     resultData.value = result;
-
     successMsg(
       `种子数据已分析完毕, 耗时${formatMilliseconds(res.data.duration)}`
     );
@@ -419,12 +377,115 @@ const getResult = async () => {
   }
 };
 
-// 关于界面
+const htmlToText = (html) => {
+  return html.replace(/<[^>]*>/g, "");
+};
+
+const formatDate = () => {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  const seconds = String(now.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day}-${hours}-${minutes}-${seconds}`;
+};
+
+const stringLength = (str) => {
+  let len = 0;
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    len += code > 255 || code < 0 ? 2 : 1;
+  }
+  return len;
+};
+
+const saveResultAsPlainText = () => {
+  if (resultData.value.length === 0) {
+    warnMsg("结果表中没有数据");
+    return;
+  }
+
+  let resultText = "";
+  let index = 0;
+  resultText += `共查找到${resultData.value.length}个最优种子\n`;
+  resultData.value.forEach((seed) => {
+    index++;
+    resultText += `========== 第${index}个种子 ==========\n`;
+    resultText += `种子: ${seed.seed2.join(", ")}\n`;
+    resultText += `得分: ${seed.score}\n\n`;
+    resultText += `种子1: ${seed.seed1.join(", ")}\n`;
+    resultText += `种子2: ${seed.seed2.join(", ")}\n`;
+    resultText += `种子3: ${seed.seed3.join(", ")}\n\n`;
+    let enemyData = [["#", "怪物ID", "污染体", "属性", "得分"]];
+    seed.enemies.forEach((enemy) => {
+      enemyData.push([
+        enemy.order,
+        enemy.enemyId,
+        htmlToText(enemy.overdrive),
+        htmlToText(enemy.attr),
+        enemy.score,
+      ]);
+    });
+    const enemyTable = table(enemyData, {
+      stringLength: stringLength, // 自定义长度计算
+    });
+    resultText += enemyTable;
+    resultText += "\n\n";
+  });
+  const blob = new Blob([resultText], { type: "text/plain;charset=utf-8" });
+  const fileName = `seedResult-${formatDate()}.txt`;
+  saveAs(blob, fileName);
+  successMsg(`结果已经导出到${fileName}`);
+};
+
+const saveResultAsJSON = () => {
+  if (resultData.value.length === 0) {
+    warnMsg("结果表中没有数据");
+    return;
+  }
+
+  const json = JSON.stringify(resultData.value);
+  const fileName = `seedResult-${formatDate()}.json`;
+  const jsonBlob = new Blob([json], {
+    type: "application/json;charset=utf-8",
+  });
+
+  saveAs(jsonBlob, fileName);
+
+  successMsg(`结果已经导出到${fileName}`);
+};
+
+const loadJSONData = (file) => {
+  if (file.raw.type !== "application/json" && !file.name.endsWith(".json")) {
+    errorMsg("请选择JSON文件");
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = (event) => {
+    try {
+      const jsonData = JSON.parse(event.target.result);
+      resultData.value = jsonData;
+      successMsg("结果导入成功");
+    } catch (err) {
+      errorMsg("JSON解析中发生错误: " + err);
+    }
+  };
+
+  reader.onerror = () => {
+    errorMsg("文件读取失败");
+  };
+
+  reader.readAsText(file.raw);
+};
+
 const aboutVisible = ref(false);
-
-// 表格最大高度动态变化
 const viewportHeight = useWindowSize().height;
-
 const ruleTableHeight = ref(300);
 const resultTableHeight = ref(300);
 
@@ -487,39 +548,39 @@ onMounted(() => {
     </el-dialog>
     <el-container>
       <el-header height="80px">
-        <!-- Header content -->
         <h1>Alice In Cradle 种子查找器</h1>
         <div class="fixedToRight">
           <el-icon
             :size="20"
             @click="aboutVisible = true"
             style="cursor: pointer"
-            ><InfoFilled
-          /></el-icon>
+          >
+            <InfoFilled />
+          </el-icon>
         </div>
       </el-header>
       <el-main class="centered-main">
-        <!-- Main content -->
         <el-tabs v-model="activeTab" class="tabs">
           <el-tab-pane label="参数配置" name="conf">
             <div class="row">
-              <span class="f4"
-                ><el-input
+              <span class="f4">
+                <el-input
                   v-model="baseURL"
                   placeholder="请输入后端URL"
                   clearable
-                  @change=""
-                  ><template #prepend>http://</template></el-input
-                ></span
-              >
-              <span class="f1"
-                ><el-input-number
+                >
+                  <template #prepend>http://</template>
+                </el-input>
+              </span>
+              <span class="f1">
+                <el-input-number
                   v-model="port"
                   :min="0"
                   :max="65535"
                   controls-position="right"
                   placeholder="请输入端口号"
-              /></span>
+                />
+              </span>
               <span class="f1">
                 <el-button @click="saveConfig" style="width: 100%"
                   >保存参数配置</el-button
@@ -531,23 +592,26 @@ onMounted(() => {
                 >
               </span>
               <span class="f1">
-                <el-button @click="deleteConfig" style="width: 100%"
+                <el-button
+                  type="danger"
+                  @click="deleteConfig"
+                  style="width: 100%"
+                  plain
                   >删除参数配置</el-button
                 >
               </span>
             </div>
             <div class="row">
-              <span class="f1"
-                ><el-button @click="getClipboradPath" style="width: 100%"
+              <span class="f1">
+                <el-button @click="getClipboradPath" style="width: 100%"
                   >获取剪贴板中文件路径</el-button
-                ></span
-              >
+                >
+              </span>
               <span class="f3">
                 <el-input
                   v-model="path"
                   placeholder="请输入文件路径"
                   clearable
-                  @change=""
                 ></el-input>
               </span>
             </div>
@@ -567,63 +631,56 @@ onMounted(() => {
                   <div class="row">
                     <span class="f1 row">
                       <span class="f1"><el-text>缓冲区大小</el-text></span>
-                      <span class="f1"
-                        ><el-input-number
+                      <span class="f1">
+                        <el-input-number
                           v-model="buffer"
                           :min="1"
                           controls-position="right"
                         >
-                          <template #suffix>
-                            <span>MB</span>
-                          </template>
-                        </el-input-number></span
-                      >
+                          <template #suffix><span>MB</span></template>
+                        </el-input-number>
+                      </span>
                     </span>
                     <span class="f2"></span>
                   </div>
                 </el-tab-pane>
                 <el-tab-pane label="多线程" name="2">
                   <div class="row">
-                    <el-text>
-                      通过文件分区以及内存映射技术，以多线程方式处理种子文件，适合较大的文件
-                    </el-text>
+                    <el-text
+                      >通过文件分区以及内存映射技术，以多线程方式处理种子文件，适合较大的文件</el-text
+                    >
                   </div>
                   <div class="row">
                     <span class="f1"><el-text>线程数</el-text></span>
-                    <span class="f1"
-                      ><el-input-number
+                    <span class="f1">
+                      <el-input-number
                         v-model="threads"
                         :min="1"
                         controls-position="right"
-                      >
-                      </el-input-number
-                    ></span>
+                      ></el-input-number>
+                    </span>
                     <span class="f1"><el-text>窗口大小</el-text></span>
-                    <span class="f1"
-                      ><el-input-number
+                    <span class="f1">
+                      <el-input-number
                         v-model="windowSize"
                         :min="1"
                         controls-position="right"
                       >
-                        <template #suffix>
-                          <span>MB</span>
-                        </template>
-                      </el-input-number></span
-                    >
+                        <template #suffix><span>MB</span></template>
+                      </el-input-number>
+                    </span>
                   </div>
                   <div class="row">
                     <span class="f1"><el-text>分区缓冲大小</el-text></span>
-                    <span class="f1"
-                      ><el-input-number
+                    <span class="f1">
+                      <el-input-number
                         v-model="chunkBuffer"
                         :min="1"
                         controls-position="right"
                       >
-                        <template #suffix>
-                          <span>MB</span>
-                        </template>
-                      </el-input-number></span
-                    >
+                        <template #suffix><span>MB</span></template>
+                      </el-input-number>
+                    </span>
                     <span class="f1"><el-text>读取缓冲大小</el-text></span>
                     <span class="f1">
                       <el-input-number
@@ -631,9 +688,7 @@ onMounted(() => {
                         :min="1"
                         controls-position="right"
                       >
-                        <template #suffix>
-                          <span>MB</span>
-                        </template>
+                        <template #suffix><span>MB</span></template>
                       </el-input-number>
                     </span>
                   </div>
@@ -641,9 +696,7 @@ onMounted(() => {
               </el-tabs>
             </div>
             <div class="row">
-              <span class="f1">
-                <el-text>堆大小</el-text>
-              </span>
+              <span class="f1"><el-text>堆大小</el-text></span>
               <span class="f1">
                 <el-input-number
                   v-model="size"
@@ -655,14 +708,11 @@ onMounted(() => {
             </div>
           </el-tab-pane>
           <el-tab-pane label="得分规则" name="cond">
-            <!-- 保存配置 -->
             <div class="row">
-              <span class="f1">
-                <el-text>配置名</el-text>
-              </span>
-              <span class="f3">
-                <el-input v-model="configName" placeholder="请输入配置名" />
-              </span>
+              <span class="f1"><el-text>配置名</el-text></span>
+              <span class="f3"
+                ><el-input v-model="configName" placeholder="请输入配置名"
+              /></span>
               <span class="f3">
                 <el-select
                   v-model="chooseConfigName"
@@ -676,33 +726,33 @@ onMounted(() => {
                   />
                 </el-select>
               </span>
-              <span class="f1">
-                <el-button @click="saveRuleConfig">保存配置</el-button>
-              </span>
-              <span class="f1">
-                <el-button @click="deleteRuleConfig">删除配置</el-button>
-              </span>
-              <span class="f1">
-                <el-button @click="loadRuleConfig">加载配置</el-button>
-              </span>
+              <span class="f1"
+                ><el-button @click="saveRuleConfig">保存配置</el-button></span
+              >
+              <span class="f1"
+                ><el-button @click="loadRuleConfig">加载配置</el-button></span
+              >
+              <span class="f1"
+                ><el-button type="danger" @click="deleteRuleConfig" plain
+                  >删除配置</el-button
+                ></span
+              >
             </div>
             <el-tabs v-model="ruleTab" type="card">
               <el-tab-pane label="种子规则" name="seed">
-                <!-- 种子规则 -->
                 <div class="row">
-                  <span class="f1">
-                    <el-button style="width: 100%" @click="addSeedRule">
-                      添加规则
-                    </el-button>
-                  </span>
-                  <span class="f1">
-                    <el-button style="width: 100%" @click="clearSeedRule">
-                      清空规则
-                    </el-button>
-                  </span>
+                  <span class="f1"
+                    ><el-button style="width: 100%" @click="addSeedRule"
+                      >添加规则</el-button
+                    ></span
+                  >
+                  <span class="f1"
+                    ><el-button style="width: 100%" @click="clearSeedRule"
+                      >清空规则</el-button
+                    ></span
+                  >
                   <span class="f4"></span>
                 </div>
-
                 <el-table
                   :data="seedRuleData"
                   style="width: 100%"
@@ -792,32 +842,30 @@ onMounted(() => {
                     <template #default="row">
                       <el-button
                         link
-                        type="primary"
+                        type="danger"
                         size="small"
                         @click.prevent="deleteSeedRule(row.$index)"
+                        plain
+                        >删除</el-button
                       >
-                        删除
-                      </el-button>
                     </template>
                   </el-table-column>
                 </el-table>
               </el-tab-pane>
               <el-tab-pane label="怪物规则" name="enemy">
-                <!-- 怪物规则 -->
                 <div class="row">
-                  <span class="f1">
-                    <el-button style="width: 100%" @click="addEnemyRule">
-                      添加规则
-                    </el-button>
-                  </span>
-                  <span class="f1">
-                    <el-button style="width: 100%" @click="clearEnemyRule">
-                      清空规则
-                    </el-button>
-                  </span>
+                  <span class="f1"
+                    ><el-button style="width: 100%" @click="addEnemyRule"
+                      >添加规则</el-button
+                    ></span
+                  >
+                  <span class="f1"
+                    ><el-button style="width: 100%" @click="clearEnemyRule"
+                      >清空规则</el-button
+                    ></span
+                  >
                   <span class="f4"></span>
                 </div>
-
                 <el-table
                   :data="enemyRuleData"
                   style="width: 100%"
@@ -892,12 +940,11 @@ onMounted(() => {
                     <template #default="row">
                       <el-button
                         link
-                        type="primary"
+                        type="danger"
                         size="small"
                         @click.prevent="deleteEnemyRule(row.$index)"
+                        >删除</el-button
                       >
-                        删除
-                      </el-button>
                     </template>
                   </el-table-column>
                 </el-table>
@@ -907,12 +954,34 @@ onMounted(() => {
           <el-tab-pane label="提交 & 结果显示" name="submit">
             <div class="row">
               <span class="f1">
-                <el-button style="width: 20%" @click="getResult">
-                  提交数据
-                </el-button>
+                <el-button style="width: 100%" @click="getResult"
+                  >提交数据</el-button
+                >
               </span>
+              <span class="f1">
+                <el-button style="width: 100%" @click="saveResultAsPlainText"
+                  >导出为纯文本</el-button
+                >
+              </span>
+              <span class="f1">
+                <el-button style="width: 100%" @click="saveResultAsJSON"
+                  >导出为JSON</el-button
+                >
+              </span>
+              <span class="f1" style="display: flex">
+                <el-upload
+                  action="#"
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  :on-change="loadJSONData"
+                  accept=".json"
+                  class="f1"
+                >
+                  <el-button style="width: 100%">导入JSON文件</el-button>
+                </el-upload>
+              </span>
+              <span class="f2"></span>
             </div>
-            <!-- 数据展示 -->
             <div class="row">
               <el-table
                 :data="resultData"
@@ -972,9 +1041,7 @@ onMounted(() => {
           </el-tab-pane>
         </el-tabs>
       </el-main>
-      <el-footer height="20px">
-        <!-- Footer content -->
-      </el-footer>
+      <el-footer height="20px"></el-footer>
     </el-container>
   </div>
 </template>
@@ -986,14 +1053,6 @@ onMounted(() => {
   padding: 0;
   height: 100%;
   overflow: hidden;
-}
-
-.el-tabs {
-  width: 70vw;
-}
-
-.el-input-number {
-  width: 100%;
 }
 
 .row {
@@ -1047,15 +1106,9 @@ onMounted(() => {
 .el-header {
   position: relative;
   margin-bottom: 20px;
-
-  /* 半透明磨砂效果 */
   background-color: rgba(14, 14, 14, 0.7);
-  /* 调整透明度，0.7是70%不透明 */
   backdrop-filter: blur(10px);
-  /* 磨砂模糊效果，数值越大越模糊 */
   -webkit-backdrop-filter: blur(10px);
-  /* 兼容Safari */
-
   h1 {
     text-align: center;
   }
@@ -1063,9 +1116,17 @@ onMounted(() => {
 
 .el-tabs {
   height: 100%;
-  /* border-radius: 20px; */
+  width: 70vw;
   background-color: rgba(0, 0, 0, 0);
   overflow: hidden;
+}
+
+.el-input-number {
+  width: 100%;
+}
+
+::v-deep .el-upload {
+  width: 100% !important;
 }
 
 .centered-main {
@@ -1074,32 +1135,19 @@ onMounted(() => {
   width: 80vw;
   height: 80vh;
   align-items: center;
-  /* 水平居中 */
   padding: 20px 100px;
-  /* 上下20px，左右100px */
   margin: 0 auto;
-  /* 水平居中 */
   border-radius: 20px;
-
-  /* 半透明磨砂效果 */
   background-color: rgba(14, 14, 14, 0.7);
-  /* 调整透明度，0.7是70%不透明 */
   backdrop-filter: blur(10px);
-  /* 磨砂模糊效果，数值越大越模糊 */
   -webkit-backdrop-filter: blur(10px);
-  /* 兼容Safari */
-
-  /* 可选：添加边框效果增强磨砂质感 */
   border: 1px solid rgba(255, 255, 255, 0.1);
-
   overflow: hidden;
 }
 
 .inner-table {
   width: 80%;
-  /* 水平居中 */
   padding: 20px 20px;
-  /* 上下20px，左右100px */
   margin: 0 auto;
 }
 
